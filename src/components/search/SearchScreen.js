@@ -1,28 +1,31 @@
-import React, { useState } from 'react'
-import { Redirect, useParams } from 'react-router-dom';
+import React, { useMemo, useState } from 'react'
+
+import queryString from 'query-string';
+
 import { heroes } from '../../data/heroes';
+import { useForm } from '../../hooks/useForm';
 import { HeroCard } from '../heroes/HeroCard';
+import { useLocation } from 'react-router-dom';
+import { getHeroByName } from '../../selectors/getHeroByName';
 
 export const SearchScreen = ({history}) => {
-  const param = useParams();
+  const location = useLocation();
+  const { q = ''} = queryString.parse(location.search);
  
-  if (param.length>0) {
-    console.log(param.s);   
-  }
+ 
+  const [formValues, handleInputChange] = useForm({
+    searchText: q
+  });
+  const { searchText } = formValues;
+  const heroesFilter = useMemo(() => getHeroByName(q), [q]);
+  // const heroesFilter = getHeroByName(searchText);
 
-  const heroesFilter = heroes.filter((hero)=>(hero.superhero === param.s));
-
-  
-  const [searchInput, setSearchInput] = useState(' ');
   const handleSubmit = (e)=>{
     e.preventDefault();
-    // console.log(searchInput);
-    history.push(`/search/${searchInput}`);
+    // history.push(`/search/${searchText}`);
+    history.push(`?q=${searchText}`);
   }
 
-  const handleChange = (e)=>{
-    setSearchInput(e.target.value);
-  }
   
   return (
     <div>
@@ -38,8 +41,10 @@ export const SearchScreen = ({history}) => {
               type="text"
               placeholder="Find hero"
               className="form-control"
-              name="q"
-              onChange={handleChange}
+              name="searchText"
+              value={searchText}
+              onChange={handleInputChange}
+              autoComplete="off"
             />
             <button
               type="submit"
@@ -52,9 +57,12 @@ export const SearchScreen = ({history}) => {
         <div className="col-7">
           <h4>Results</h4>
           <hr />
-          { (heroesFilter.length>0)
-              ? heroesFilter.map(hero => <HeroCard key={hero.id} {...hero} />)
-              : <div className="alert alert-info">Not found heroe</div> }
+
+          {q === '' && <div className="alert alert-info">Search a heroe</div>}
+
+          {(q !== '' && heroesFilter.length === 0) && <div className="alert alert-danger">There is no a heroe with {q} </div>}
+
+          {heroesFilter.map((hero) => <HeroCard key={hero.id} {...hero} />)}
         </div>
       </div>
     </div>
